@@ -3,12 +3,19 @@
 // -ldrawstuff -lX11 -lglut -lGL -lGLU -std=c++11 -DdDOUBLE
 
 #include <iostream>
+#include <cstdio>
 #include <ode/ode.h>
 #include <drawstuff/drawstuff.h>
 #include "robot.hpp"
 #include "ga.hpp"
 #include "ann.hpp"
 
+
+// TODO in robot.cpp random initialization is maybe not so random
+// TODO in robot.cpp walk function, there was some weird walking code
+
+using std::cout;
+using std::endl;
 
 
 // Simulation window size
@@ -22,34 +29,36 @@ static const double ERP_P = 0.2;
 
 static const int CONTACT_ARR_SIZE = 20;
 
-static const double SIM_TIME = 5.0;
+static const double SIM_TIME = 3.0;
 
-static const int GENS = 300;
+static const int GENS = 10;
 static const int POP_SIZE = 100;
 
-double fitness[POP_SIZE];
+static std::vector<double> fitness(POP_SIZE);
 
-int in_l = LEG_NUM + LEG_NUM + (JT_NUM+1);
-	int mid_l = 10;
-	int out_l = LEG_NUM*(JT_NUM+1);
-int c_size = (in_l+1)*mid_l + (mid_l+1)*out_l;
+static const int in_l = LEG_NUM + LEG_NUM + (JT_NUM+1);
+static const int mid_l = 10;
+static const int out_l = LEG_NUM*(JT_NUM+1);
+static const int c_size = (in_l+1)*mid_l + (mid_l+1)*out_l;
+
+static dReal new_state[LEG_NUM][JT_NUM+1];
+	static dReal input[LEG_NUM + LEG_NUM*(JT_NUM+1)];
+
+	static dReal hoof_force[LEG_NUM];
+	static dReal angle[LEG_NUM][JT_NUM+1];
+	static dReal upset_force[2];
+
+static double f_layer[mid_l * (in_l+1)];
+static double s_layer[out_l * (mid_l+1)];
 
 
-// static const int LEG_NUM = 4;
-// static const int LINK_NUM = 2;
-// static const int JT_NUM = 2;
-
-using std::cout;
-using std::endl;
 
 Robot* rob;
 ANN* ann;
 GA* ga;
-std::vector<double*> population(POP_SIZE);
+static std::vector<double*> population(POP_SIZE);
 
 
-void start() {
-}
 
 dWorldID world;
 dSpaceID space;
@@ -94,10 +103,9 @@ void createInput(
 	}
 }
 
-void encode(
-	double (& fl)[mid_l * (in_l+1)],
+static void encode(double (& fl)[mid_l * (in_l+1)],
 	double (& sl)[out_l * (mid_l+1)],
-	double (& chromosome)[c_size]
+	double* chromosome
 	) {
 
 	int f_lim = mid_l * (in_l+1);
@@ -113,9 +121,9 @@ void encode(
 	}
 }
 
-void decode(double (& fl)[mid_l * (in_l+1)],
+static void decode(double (& fl)[mid_l * (in_l+1)],
 	double (& sl)[out_l * (mid_l+1)],
-	double (& chromosome)[c_size]
+	double* chromosome
 	) {
 
 	int f_lim = mid_l * (in_l+1);
@@ -131,23 +139,48 @@ void decode(double (& fl)[mid_l * (in_l+1)],
 	}
 }
 
+void initNewIndividual() {
+	time_since_start = 0;
+	delete rob;
+	rob = new Robot(world, space, 0.005);
+	decode(f_layer, s_layer, population[curr_idx]);
+	// TODO somehow set fitness
+}
+
+static int curr_gen = 0;
+
+bool done = false;
+
+void initNewGeneration() {
+	for (int i = 0; i < POP_SIZE; i++) {
+		printf("%.2f ", fitness[i]);
+	}
+	cout << endl;
+	curr_idx = 0;
+	ga->evolve(fitness, population);
+	curr_gen++;
+	cout << curr_gen << endl;
+	if (curr_gen >= GENS) {
+		done = true;
+	}
+}
+
+
+void start() {
+	initNewIndividual();
+}
+
+
+
 
 void simLoop(int pause) {
 	// TODO handle all contact_group
 	dSpaceCollide(space, 0, &nearCallback);		// TODO middle argument is data
 	dWorldStep(world, 0.005);
 	time_since_start += 0.005;
-	dReal hoof_force[LEG_NUM];
-	dReal angle[LEG_NUM][JT_NUM+1];
-	dReal upset_force[2];
+	
 	rob->readSensors(hoof_force, angle, upset_force);
 
-
-
-	// TODO use ann to calculate new curr state for the robot
-	dReal new_state[LEG_NUM][JT_NUM+1];
-	dReal input[LEG_NUM + LEG_NUM*(JT_NUM+1)];
-	
 	createInput(hoof_force, input, angle);
 
 	ann->feedThrough(&input[0], &new_state[0][0]);
@@ -161,18 +194,19 @@ void simLoop(int pause) {
 	time_since_start += 0.005;
 
 	if (time_since_start > SIM_TIME) {
-		time_since_start = 0;
-		cout << rob->getXPosition() << endl;
-		delete rob;
-		delete ann;
-		rob = new Robot(world, space, 0.005);
-		curr_idx++;
-		//fitness[curr_idx] = ;
-
-		if (curr_idx >= 100) {
-			// TODO run GA
-
+		if (rob->getFrontUpset() > 10.0 || rob->getBackUpset() > 10.0) {
+			fitness[curr_idx] = 0;
+		} else {
+			fitness[curr_idx] = rob->getXPosition();
 		}
+		curr_idx++;
+		
+		//cout << curr_idx << " >= " << POP_SIZE << endl;
+		if (curr_idx >= POP_SIZE) {
+			// TODO run GA
+			initNewGeneration();
+		}
+		initNewIndividual();
 	}
 }
 
@@ -225,6 +259,11 @@ int main(int argc, char** argv) {
 
 	// Run endless loop
 	dsSimulationLoop(argc, argv, WINDOW_WIDTH, WINDOW_HEIGHT, &fn);
+	// start();
+	// while (!done) {
+	// 	simLoop(0);
+	// }
+
 
 	// Finalization and exiting
 	dSpaceDestroy(space);

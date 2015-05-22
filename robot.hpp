@@ -53,6 +53,7 @@ private:
 
 public:
 	Robot(dWorldID world, dSpaceID space, double one_step);
+	~Robot();
 	void walk();
 	void setNewState(const dReal (& new_state)[LEG_NUM][JT_NUM+1]);
 	double getXPosition() const;
@@ -63,8 +64,6 @@ public:
 		dReal (& angle)[LEG_NUM][JT_NUM+1],
 		dReal (& upset_force)[2]) const;
 	void draw() const;
-
-	~Robot();
 };
 
 

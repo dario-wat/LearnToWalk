@@ -3,6 +3,7 @@
 #include <limits>
 #include <ctime>
 #include <cstdlib>
+#include <iostream>
 
 
 // TODO do sometihng with chromosome type, cant go around like this
@@ -100,7 +101,7 @@ void GA::evolve(const std::vector<double>& fitness, std::vector<double*>& popula
 	copy(population_[best_ind], population[0], c_size_);
 	copy(population_[s_best_ind], population[1], c_size_);
 
-	for (int i = 2; i < pop_size_; i++) {
+	for (int i = 2; i < pop_size_; i+=2) {
 		int j = select(fitness);
 		int k = select(fitness);
 		cross(population_[j], population_[k], population[i], population[i+1]);
@@ -111,6 +112,6 @@ void GA::evolve(const std::vector<double>& fitness, std::vector<double*>& popula
 
 void GA::randomizeChromosome(double* chromosome, int size) {
 	for (int i = 0; i < size; i++) {
-		chromosome[i] = randDouble() - 0.5;
+		chromosome[i] = (rand() - RAND_MAX/2.) / (RAND_MAX/3.0);
 	}
 }

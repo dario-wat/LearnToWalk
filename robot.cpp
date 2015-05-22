@@ -29,7 +29,7 @@ static const dReal SX = 0, SY = 0, SZ = 0.40;	// initial position of center of g
 static const dReal l1 = 0.15, l2  = 0.17;  		// lenth of links
 static const dReal sensor_l = 0.03;				// leg sensor length
 static const dReal sensor_r = 0.03;				// leg sensor radius
-static const dReal upset_s_l = 0.01;			//upset sensor length
+static const dReal upset_s_l = 0.01;			// upset sensor length
 static const dReal upset_s_r = 0.1;				// upset sensor radius 
 static const dReal lx = 0.45, ly = 0.25, lz = 0.10;		// body sides
 static const dReal r1 = 0.03, r2 = 0.03;				// leg radius
@@ -210,10 +210,6 @@ void Robot::createUpsetFeedback() {
 	dJointSetFeedback(upset_fixed[1], &upset_feedback[1]);
 }
 
-inline static double randDouble() {
-	return ((double) rand()) / RAND_MAX;
-}
-
 
 // Constructor, creates all body parts and sensors, attaches all body parts
 // to each other and all sensors to the right places
@@ -233,15 +229,39 @@ Robot::Robot(dWorldID world, dSpaceID space, double one_step)
 
 	srand(time(NULL));
 
-	//TODO check the random initialization
 	for (int i = 0; i < LEG_NUM; i++) {
 		for (int j = 0; j < JT_NUM+1; j++) {
-			curr_state[i][j] = (rand() - RAND_MAX/2.) / RAND_MAX ;
+			curr_state[i][j] = (rand() - RAND_MAX/2.) / (RAND_MAX/5.);
 		}
 	}
 }
 
+// Destructor, destroy all joints of the robot
+Robot::~Robot() {
+	for (int i = 0; i < LEG_NUM; i++) {
+		for (int j = 0; j < LINK_NUM; j++) {
+			dJointDestroy(leg[i][j].joint);
+			dBodyDestroy(leg[i][j].body);
+			dGeomDestroy(leg[i][j].geom);
+		}
+		dJointDestroy(hoof[i]);
+		dBodyDestroy(sensor[i].body);
+		dGeomDestroy(sensor[i].geom);
+	}
 
+	dJointDestroy(upset_fixed[0]);
+	dJointDestroy(upset_fixed[1]);
+	dBodyDestroy(torso_.body);
+	dBodyDestroy(upset_sensor[0].body);
+	dBodyDestroy(upset_sensor[1].body);
+	dGeomDestroy(torso_.geom);
+	dGeomDestroy(upset_sensor[0].geom);
+	dGeomDestroy(upset_sensor[1].geom);
+}
+
+
+
+// Control the robots legs
 void Robot::PIDControl(double degree1, double degree2, double degree3, int legnum) {
 	// PID constants
 	static const dReal kp = 300.0 * one_step;
@@ -279,19 +299,8 @@ void Robot::PIDControl(double degree1, double degree2, double degree3, int legnu
 	dJointSetHingeParam(leg[legnum][1].joint, dParamFMax, fMax);
 }
 
-
+// Walk the robot (move the robot)
 void Robot::walk() {
-	// TODO what with this??
-	// for(int i=0; i<LEG_NUM; ++i){
-	// 	if(times > 0.3 && times < 0.4){	
-	// 		dWorldSetGravity(world, 0, 0, -9.8);
-	// 		PIDcontrol(actuator_node[i][0]*0.8*M_PI, (actuator_node[i][1]*1.2-0.5)*M_PI,actuator_node[i][2]*0.8*M_PI,i);
-	// 	}else if(times >= 0.4){
-	// 		PIDcontrol(actuator_node[i][0]*0.8*M_PI, (actuator_node[i][1]*1.2-0.5)*M_PI,actuator_node[i][2]*0.8*M_PI,i);
-	// 	}else{
-	// 		PIDcontrol(init_state[i][0], init_state[i][1],init_state[i][2],i);
-	// 	}
-	// }
 	for (int i = 0; i < LEG_NUM; i++) {
 		PIDControl(
 			curr_state[i][0] * 0.8 * M_PI,
@@ -302,7 +311,6 @@ void Robot::walk() {
 	}
 }
 
-
 // Sets new state for the robot next move
 void Robot::setNewState(const dReal (& new_state)[LEG_NUM][JT_NUM+1]) {
 	for (int i = 0; i < LEG_NUM; i++) {
@@ -312,22 +320,25 @@ void Robot::setNewState(const dReal (& new_state)[LEG_NUM][JT_NUM+1]) {
 	}
 }
 
+// Getter for robots X position
 double Robot::getXPosition() const {
 	const double* pos = dBodyGetPosition(torso_.body);
 	return pos[0];
 }
 
+// Returns value of back upset sensor
 double Robot::getBackUpset() const {
 	dJointFeedback *fb = dJointGetFeedback(upset_fixed[0]);
 	return fb->f1[2];
 }
 
+// Returns value of front (belly) upset sensor
 double Robot::getFrontUpset() const {
 	dJointFeedback *fb = dJointGetFeedback(upset_fixed[1]);
 	return fb->f1[2];
 }
 
-// Reads all sensor values
+// Reads all sensor values into the 3 arrays
 void Robot::readSensors(
 	dReal (& hoof_force)[LEG_NUM],
 	dReal (& angle)[LEG_NUM][JT_NUM+1],
@@ -414,26 +425,4 @@ void Robot::draw() const {
 		length,
 		r
 	);
-}
-
-Robot::~Robot() {
-	for (int i = 0; i < LEG_NUM; i++) {
-		for (int j = 0; j < LINK_NUM; j++) {
-			dJointDestroy(leg[i][j].joint);
-			dBodyDestroy(leg[i][j].body);
-			dGeomDestroy(leg[i][j].geom);
-		}
-		dJointDestroy(hoof[i]);
-		dBodyDestroy(sensor[i].body);
-		dGeomDestroy(sensor[i].geom);
-	}
-
-	dJointDestroy(upset_fixed[0]);
-	dJointDestroy(upset_fixed[1]);
-	dBodyDestroy(torso_.body);
-	dBodyDestroy(upset_sensor[0].body);
-	dBodyDestroy(upset_sensor[1].body);
-	dGeomDestroy(torso_.geom);
-	dGeomDestroy(upset_sensor[0].geom);
-	dGeomDestroy(upset_sensor[1].geom);
 }
