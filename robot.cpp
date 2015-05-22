@@ -3,7 +3,6 @@
 #include <drawstuff/drawstuff.h>
 #include <iostream>
 #include <cstdlib>
-#include <ctime>
 
 #ifdef dDOUBLE
 #define dsDrawCapsule 	dsDrawCapsuleD
@@ -227,11 +226,10 @@ Robot::Robot(dWorldID world, dSpaceID space, double one_step)
 	createHoofFeedback();
 	createUpsetFeedback();
 
-	srand(time(NULL));
-
 	for (int i = 0; i < LEG_NUM; i++) {
 		for (int j = 0; j < JT_NUM+1; j++) {
-			curr_state[i][j] = (rand() - RAND_MAX/2.) / (RAND_MAX/5.);
+			//curr_state[i][j] = (rand() - RAND_MAX/2.) / (RAND_MAX/1.);
+			curr_state[i][j] = 0.0;
 		}
 	}
 }
@@ -258,7 +256,6 @@ Robot::~Robot() {
 	dGeomDestroy(upset_sensor[0].geom);
 	dGeomDestroy(upset_sensor[1].geom);
 }
-
 
 
 // Control the robots legs

@@ -20,6 +20,7 @@ private:
 	  dReal m, r, x, y, z;		// m:weight, r:radius, x,y,z:position
 	} MyLink;
 
+	// Links for getting data
 	MyLink torso_;
 	MyLink leg[LEG_NUM][LINK_NUM];
 	MyLink sensor[LEG_NUM];
@@ -29,12 +30,15 @@ private:
 	dSpaceID space_;
 	double one_step;
 
+	// Auxiliary arrays
 	dJointID hoof[LEG_NUM];
 	dJointFeedback feedback[LEG_NUM];
 	dJointFeedback upset_feedback[2];
 	dJointID upset_fixed[2];
 
-	dReal curr_state[LEG_NUM][JT_NUM+1];
+	dReal curr_state[LEG_NUM][JT_NUM+1];	// Used for moving
+
+	// Used with PID controller
 	dReal diffsum[LEG_NUM][JT_NUM+1] = {	{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0},
 											{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}	};
 

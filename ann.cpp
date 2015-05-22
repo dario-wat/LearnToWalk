@@ -1,6 +1,8 @@
 #include "ann.hpp"
 
 
+// Constructor, creates all arrays for weights and nodes. Adds bias term to
+// input and hidden nodes.
 ANN::ANN(int inp, int hid, int out) : inp_(inp), hid_(hid), out_(out) {
 	int fl_size = hid * (inp+1);
 	int sl_size = out * (hid+1);
@@ -10,19 +12,29 @@ ANN::ANN(int inp, int hid, int out) : inp_(inp), hid_(hid), out_(out) {
 	this->mid_data_ = new double[hid+1];
 }
 
-inline static void copy(double* from, double* to, int size) {
+// Clear auxiliary arrays
+ANN::~ANN() {
+	delete fl_;
+	delete sl_;
+	delete in_data_;
+	delete mid_data_;
+}
+
+// Copy arrays
+static void copy(double* from, double* to, int size) {
 	for (int i = 0; i < size; i++) {
 		to[i] = from[i];
 	}
 }
 
+// Set the weights of the ann
 void ANN::setWeights(double *fl, double *sl) {
-	copy(fl, fl_, inp_ * hid_);
-	copy(sl, sl_, hid_ * out_);
+	copy(fl, fl_, hid_ * (inp_+1));
+	copy(sl, sl_, out_ * (hid_+1));
 }
 
 
-inline static void multiply(double *A, double *B, double *C, int n, int m, int o) {
+static void multiply(double *A, double *B, double *C, int n, int m, int o) {
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < o; j++) {
 			C[i*o+j] = 0;

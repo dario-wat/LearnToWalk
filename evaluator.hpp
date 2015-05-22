@@ -29,7 +29,6 @@ private:
 	const double sim_time_;
 	const dWorldID world_;
 	const dSpaceID space_;
-	const bool draw_;
 	
 	// Auxiliary arrays
 	dReal hoof_force[LEG_NUM];
@@ -48,9 +47,9 @@ private:
 	static void nearCallback(void *data, dGeomID o1, dGeomID o2);
 	void createInput();
 public:
-	Evaluator(dWorldID world, dSpaceID space, double sim_step, double sim_time, bool draw);
-	double evaluate();
-	void setParams(Robot* robot, ANN* ann);
+	Evaluator(dWorldID world, dSpaceID space, double sim_step, double sim_time);
+	~Evaluator();
+	double evaluate(Robot* robot, ANN* ann);
 };
 
 

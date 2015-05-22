@@ -4,18 +4,20 @@
 #include <ctime>
 #include <cstdlib>
 #include <iostream>
+#include <random>
 
 
 // TODO do sometihng with chromosome type, cant go around like this
 // TODO change all array parameters
+// TODO crossing maybe average
 
 
+// Constructor, creates indices array that is used to shuffle selection,
+// creates auxiliary population array to copy the population and use it
+// to create new one.
 GA::GA(int c_size, int pop_size, double mutation_prob, int tournament_size) 
 	: 	mutation_prob_(mutation_prob), c_size_(c_size),
 		pop_size_(pop_size), tournament_size_(tournament_size), population_(pop_size) {
-
-	// Randomizer
-	srand(time(NULL));
 
 	// Initialize indices array for shuffling for selection
 	this->indices = new int[pop_size];
@@ -29,6 +31,15 @@ GA::GA(int c_size, int pop_size, double mutation_prob, int tournament_size)
 	}
 }
 
+// Destructor, clean up auxiliary arrays
+GA::~GA() {
+	delete indices;
+	for (int i = 0; i < pop_size; i++) {
+		delete population_[i];
+	}
+}
+
+// Selects individuals based on tournament selection
 int GA::select(const std::vector<double>& fitness) {
 	std::random_shuffle(indices, indices + pop_size_);
 	double best_value = std::numeric_limits<double>::lowest();
@@ -43,6 +54,8 @@ int GA::select(const std::vector<double>& fitness) {
 	return best_index;
 }
 
+// Crosses 2 parents. Cuts the chromosomes in 2 and then assigns parts to children.
+// Creates 2 children by crossing.
 void GA::cross(double* parentA, double* parentB, double* childA, double* childB) {
 	int cut = rand() % c_size_;
 	for (int i = 0; i < cut; i++) {
@@ -54,27 +67,36 @@ void GA::cross(double* parentA, double* parentB, double* childA, double* childB)
 		childB[i] = parentA[i];
 	}
 	
-	// TODO crossing maybe average
+	
 }
 
+// Rand double [0..1]
 inline static double randDouble() {
 	return ((double) rand()) / RAND_MAX;
 }
 
-inline static void copy(double* from, double* to, int size) {
+// Mutates a chromosome. Mutates (mutation_prob_ * 100) % of genes. In each gene that
+// is being mutated, the new double value is creates using normal distribution
+// with old value set as mean
+void GA::mutate(double* chrom) {
+	for (int i = 0; i < c_size_; i++) {
+		if (randDouble() < mutation_prob_) {
+			std::normal_distribution<double> pdf(chrom[i], MUTATE_DEV);
+			chrom[i] = pdf(generator);
+		}
+	}
+}
+
+// Copies array
+static void copy(double* from, double* to, int size) {
 	for (int i = 0; i < size; i++) {
 		to[i] = from[i];
 	}
 }
 
-void GA::mutate(double* chrom) {
-	for (int i = 0; i < c_size_; i++) {
-		if (randDouble() < mutation_prob_) {
-			// TODO do some kind of mutation to chrom
-		}
-	}
-}
-
+// Evolves. Uses 2 best from the previous population in form of elitism, and then
+// using selection, crossing and mutations create the rest of the new population.
+// The new population is saved in population variable.
 void GA::evolve(const std::vector<double>& fitness, std::vector<double*>& population) {
 	// Make a copy of the population
 	for (int i = 0; i < pop_size_; i++) {
@@ -101,6 +123,7 @@ void GA::evolve(const std::vector<double>& fitness, std::vector<double*>& popula
 	copy(population_[best_ind], population[0], c_size_);
 	copy(population_[s_best_ind], population[1], c_size_);
 
+	// Create the rest
 	for (int i = 2; i < pop_size_; i+=2) {
 		int j = select(fitness);
 		int k = select(fitness);
@@ -110,8 +133,18 @@ void GA::evolve(const std::vector<double>& fitness, std::vector<double*>& popula
 	}
 }
 
+// Creates chromosome randomized. This is static function and is used to initialize
+// all chromosomes.
 void GA::randomizeChromosome(double* chromosome, int size) {
 	for (int i = 0; i < size; i++) {
 		chromosome[i] = (rand() - RAND_MAX/2.) / (RAND_MAX/3.0);
 	}
+}
+
+// Used for debugging
+void GA::printChromosome(double* chromosome, int size) {
+	for (int i = 0; i < size; i++) {
+		std::cout << chromosome[i] << " ";
+	}
+	std::cout << std::endl;
 }

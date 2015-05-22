@@ -2,30 +2,36 @@
 #define GA_H_
 
 #include <vector>
+#include <random>
 
 
 class GA {
 
 private:
-	double* fitness_;
-	double mutation_prob_;
-	int c_size_;
-	int pop_size_;
-	int tournament_size_;
-	int* indices;
-	std::vector<double*> population_;
+	static constexpr double MUTATE_DEV = 1.0;	// stddev for mutations
+
+	std::default_random_engine generator;	// For random for mutation
+	int* indices;							// For shuffling for selection
+
+	double mutation_prob_;					// Probability of mutation
+	int c_size_;							// Chromosome size
+	int pop_size_;							// Population size
+	int tournament_size_;					// Tournament size for tournament selection
+	
+	std::vector<double*> population_;		// Auxiliary array
 	
 private:
 	int select(const std::vector<double>& fitness);
 	void cross(double* parentA, double* parentB, double* childA, double* childB);
 	void mutate(double* chrom);
+
 public:
 	GA(int c_size, int pop_size, double mutation_prob, int tournament_size);
+	~GA();
 	void evolve(const std::vector<double>& fitness, std::vector<double*>& population);
 
 	static void randomizeChromosome(double* chromosome, int size);
-
-	// TODO make destructor
+	static void printChromosome(double* chromosome, int size);
 };
 
 #endif

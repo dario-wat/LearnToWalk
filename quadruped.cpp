@@ -4,11 +4,14 @@
 
 #include <iostream>
 #include <cstdio>
+#include <cstdlib>
+#include <ctime>
 #include <ode/ode.h>
 #include <drawstuff/drawstuff.h>
 #include "robot.hpp"
 #include "ga.hpp"
 #include "ann.hpp"
+#include "evaluator.hpp"
 
 
 // TODO in robot.cpp random initialization is maybe not so random
@@ -27,81 +30,32 @@ static const double GRAVITY = -9.81;
 static const double CFM_P = 10e-10;
 static const double ERP_P = 0.2;
 
-static const int CONTACT_ARR_SIZE = 20;
 
 static const double SIM_TIME = 3.0;
-
-static const int GENS = 10;
+static const int GENERATIONS = 100;
 static const int POP_SIZE = 100;
 
-static std::vector<double> fitness(POP_SIZE);
-
-static const int in_l = LEG_NUM + LEG_NUM + (JT_NUM+1);
+static const int in_l = LEG_NUM + LEG_NUM * (JT_NUM+1);
 static const int mid_l = 10;
 static const int out_l = LEG_NUM*(JT_NUM+1);
 static const int c_size = (in_l+1)*mid_l + (mid_l+1)*out_l;
 
-static dReal new_state[LEG_NUM][JT_NUM+1];
-	static dReal input[LEG_NUM + LEG_NUM*(JT_NUM+1)];
-
-	static dReal hoof_force[LEG_NUM];
-	static dReal angle[LEG_NUM][JT_NUM+1];
-	static dReal upset_force[2];
 
 static double f_layer[mid_l * (in_l+1)];
 static double s_layer[out_l * (mid_l+1)];
 
 
-
-Robot* rob;
-ANN* ann;
-GA* ga;
+static Evaluator* evaluator;
+static Robot* rob;
+static ANN* ann;
+static GA* ga;
 static std::vector<double*> population(POP_SIZE);
-
+static std::vector<double> fitness(POP_SIZE);
 
 
 dWorldID world;
 dSpaceID space;
-dJointGroupID contact_group;
 
-static void nearCallback(void *data, dGeomID o1, dGeomID o2) {
-	dBodyID b1 = dGeomGetBody(o1);
-	dBodyID b2 = dGeomGetBody(o2);
-	if (b1 && b2 && dAreConnectedExcluding(b1, b2, dJointTypeContact)) {
-		return;
-	}
-	
-	dContact contact[CONTACT_ARR_SIZE];
-
-	int n = dCollide(o1, o2, CONTACT_ARR_SIZE, &contact[0].geom, sizeof(dContact));
-	for (int i = 0; i < n; i++) {
-		contact[i].surface.mode = dContactSoftERP | dContactSoftCFM;
-		contact[i].surface.mu = 100.0; 
-		contact[i].surface.soft_erp = ERP_P;//(one_step*para_K)/(one_step*para_K + para_C);		//ERP
-		contact[i].surface.soft_cfm = CFM_P;//1.0/(one_step*para_K+para_C);		//CFM
-		dJointID c = dJointCreateContact(world, contact_group, &contact[i]);
-		dJointAttach(c, b1, b2);
-	}
-}
-double time_since_start = 0.0;
-int curr_idx = 0;
-
-
-void createInput(
-	dReal (& hoof_force)[LEG_NUM],
-	dReal (& input)[LEG_NUM + LEG_NUM*(JT_NUM+1)],
-	dReal (& angle)[LEG_NUM][JT_NUM+1]
-	) {
-	
-	for (int i = 0; i < LEG_NUM; i++) {
-		input[i] = hoof_force[i];
-	}
-	for (int i = 0; i < LEG_NUM; i++) {
-		for (int j = 0; j < JT_NUM+1; j++) {
-			input[LEG_NUM + i*(JT_NUM+1) + j] = angle[i][j];
-		}
-	}
-}
 
 static void encode(double (& fl)[mid_l * (in_l+1)],
 	double (& sl)[out_l * (mid_l+1)],
@@ -139,79 +93,24 @@ static void decode(double (& fl)[mid_l * (in_l+1)],
 	}
 }
 
-void initNewIndividual() {
-	time_since_start = 0;
-	delete rob;
-	rob = new Robot(world, space, 0.005);
 
-	// TODO next 2 lines have to be done here!!!!
-	decode(f_layer, s_layer, population[curr_idx]);
-	ann->setWeights(f_layer, s_layer);
-	// TODO somehow set fitness
-}
-
-static int curr_gen = 0;
-
-bool done = false;
-
-void initNewGeneration() {
-	for (int i = 0; i < POP_SIZE; i++) {
-		printf("%.2f ", fitness[i]);
-	}
-	cout << endl;
-	curr_idx = 0;
-	ga->evolve(fitness, population);
-	curr_gen++;
-	cout << curr_gen << endl;
-	if (curr_gen >= GENS) {
-		done = true;
-	}
-}
-
-
-void start() {
-	initNewIndividual();
-}
-
-
-
-
-void simLoop(int pause) {
-	// TODO handle all contact_group
-	dSpaceCollide(space, 0, &nearCallback);		// TODO middle argument is data
-	dWorldStep(world, 0.005);
-	time_since_start += 0.005;
-	
-	rob->readSensors(hoof_force, angle, upset_force);
-
-	createInput(hoof_force, input, angle);
-
-	ann->feedThrough(&input[0], &new_state[0][0]);
-
-	rob->setNewState(new_state);
-
-	rob->walk();
-	//rob->draw();
-	dJointGroupEmpty(contact_group);
-
-	time_since_start += 0.005;
-
-	if (time_since_start > SIM_TIME) {
-		if (rob->getFrontUpset() > 10.0 || rob->getBackUpset() > 10.0) {
-			fitness[curr_idx] = 0;
-		} else {
-			fitness[curr_idx] = rob->getXPosition() > 0 ? rob->getXPosition() : 0;
+void simulate() {
+	for (int j = 0; j < GENERATIONS; j++) {
+		for (int i = 0; i < POP_SIZE; i++) {
+			rob = new Robot(world, space, 0.005);
+			decode(f_layer, s_layer, population[i]);
+			ann->setWeights(f_layer, s_layer);
+			fitness[i] = evaluator->evaluate(rob, ann);
+			delete rob;
+			cout << "Ind: " << i << " Fitness: " << fitness[i] << endl;
 		}
-		curr_idx++;
 		
-		//cout << curr_idx << " >= " << POP_SIZE << endl;
-		if (curr_idx >= POP_SIZE) {
-			// TODO run GA
-			initNewGeneration();
-		}
-		initNewIndividual();
+		cout << endl;
+		ga->evolve(fitness, population);
+		cout << j<< endl;
 	}
 }
+
 
 void command(int cmd) {
 	if (cmd == 'q') {
@@ -221,8 +120,8 @@ void command(int cmd) {
 
 void initializeCallbacks(dsFunctions* fn) {
 	fn->version = DS_VERSION;
-	fn->start = &start;
-	fn->step = &simLoop;
+	fn->start = 0;//&start;
+	fn->step = 0;//&simLoop;
 	fn->command = &command;
 	fn->stop = 0;
 	fn->path_to_textures = "textures";
@@ -232,15 +131,16 @@ void initializeCallbacks(dsFunctions* fn) {
 
 
 int main(int argc, char** argv) {
+	srand(time(NULL));
 	
 	// Initialize things for ODE
 	dInitODE();
 	world = dWorldCreate();        			// for dynamics
 	space = dHashSpaceCreate(0);        		// for collision
 	dGeomID ground = dCreatePlane(space, 0, 0, 1, 0);	// ground
-	contact_group = dJointGroupCreate(0); // contact group for collision
 	dsFunctions fn;           							// function of drawstuff
 	initializeCallbacks(&fn);
+	evaluator = new Evaluator(world, space, 0.005, SIM_TIME);
 	
 	// TODO he set gravitiy as = in the beginning
 	dWorldSetGravity(world, 0, 0, GRAVITY);
@@ -248,11 +148,8 @@ int main(int argc, char** argv) {
 	// TODO he did something else here
 	dWorldSetCFM(world, CFM_P);
 	dWorldSetERP(world, ERP_P);
-
-	rob = new Robot(world, space, 0.005);
 	
 	ann = new ANN(in_l, mid_l, out_l);
-
 
 	for (int i = 0; i < POP_SIZE; i++) {
 		population[i] = new double[c_size];
@@ -262,10 +159,7 @@ int main(int argc, char** argv) {
 
 	// Run endless loop
 	//dsSimulationLoop(argc, argv, WINDOW_WIDTH, WINDOW_HEIGHT, &fn);
-	start();
-	while (!done) {
-		simLoop(0);
-	}
+	simulate();
 
 
 	// Finalization and exiting
