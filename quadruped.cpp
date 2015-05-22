@@ -143,7 +143,10 @@ void initNewIndividual() {
 	time_since_start = 0;
 	delete rob;
 	rob = new Robot(world, space, 0.005);
+
+	// TODO next 2 lines have to be done here!!!!
 	decode(f_layer, s_layer, population[curr_idx]);
+	ann->setWeights(f_layer, s_layer);
 	// TODO somehow set fitness
 }
 
@@ -188,7 +191,7 @@ void simLoop(int pause) {
 	rob->setNewState(new_state);
 
 	rob->walk();
-	rob->draw();
+	//rob->draw();
 	dJointGroupEmpty(contact_group);
 
 	time_since_start += 0.005;
@@ -197,7 +200,7 @@ void simLoop(int pause) {
 		if (rob->getFrontUpset() > 10.0 || rob->getBackUpset() > 10.0) {
 			fitness[curr_idx] = 0;
 		} else {
-			fitness[curr_idx] = rob->getXPosition();
+			fitness[curr_idx] = rob->getXPosition() > 0 ? rob->getXPosition() : 0;
 		}
 		curr_idx++;
 		
@@ -258,11 +261,11 @@ int main(int argc, char** argv) {
 	ga = new GA(c_size, POP_SIZE, 0.05, 10);
 
 	// Run endless loop
-	dsSimulationLoop(argc, argv, WINDOW_WIDTH, WINDOW_HEIGHT, &fn);
-	// start();
-	// while (!done) {
-	// 	simLoop(0);
-	// }
+	//dsSimulationLoop(argc, argv, WINDOW_WIDTH, WINDOW_HEIGHT, &fn);
+	start();
+	while (!done) {
+		simLoop(0);
+	}
 
 
 	// Finalization and exiting

@@ -10,18 +10,16 @@ static const int LINK_NUM = 2;			// link count on each leg
 static const int JT_NUM = 2;			// joint count on each leg
 
 
-typedef struct {
-  dBodyID body;
-  dGeomID geom;
-  dJointID joint;
-  dReal m, r, x, y, z;		// m:weight, r:radius, x,y,z:position
-} MyLink;
-
-
-
 class Robot {
 
 private:
+	typedef struct {
+	  dBodyID body;
+	  dGeomID geom;
+	  dJointID joint;
+	  dReal m, r, x, y, z;		// m:weight, r:radius, x,y,z:position
+	} MyLink;
+
 	MyLink torso_;
 	MyLink leg[LEG_NUM][LINK_NUM];
 	MyLink sensor[LEG_NUM];
