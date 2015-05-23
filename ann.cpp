@@ -4,10 +4,8 @@
 // Constructor, creates all arrays for weights and nodes. Adds bias term to
 // input and hidden nodes.
 ANN::ANN(int inp, int hid, int out) : inp_(inp), hid_(hid), out_(out) {
-	int fl_size = hid * (inp+1);
-	int sl_size = out * (hid+1);
-	this->fl_ = new double[fl_size];
-	this->sl_ = new double[sl_size];
+	this->fl_ = new double[hid * (inp+1)];
+	this->sl_ = new double[out * (hid+1)];
 	this->in_data_ = new double[inp+1];
 	this->mid_data_ = new double[hid+1];
 }
@@ -33,7 +31,7 @@ void ANN::setWeights(double *fl, double *sl) {
 	copy(sl, sl_, out_ * (hid_+1));
 }
 
-
+// Matrix multiplication AB=C
 static void multiply(double *A, double *B, double *C, int n, int m, int o) {
 	for (int i = 0; i < n; i++) {
 		for (int j = 0; j < o; j++) {
@@ -45,7 +43,8 @@ static void multiply(double *A, double *B, double *C, int n, int m, int o) {
 	}
 }
 
-inline static void activation(double *v, int n) {
+// Activation function, ReLU
+static void activation(double *v, int n) {
 	for (int i = 0; i < n; i++) {
 		if (v[i] < 0) {
 			v[i] /= 100;
@@ -53,6 +52,7 @@ inline static void activation(double *v, int n) {
 	}
 }
 
+// Feed ANN with input and receive output
 void ANN::feedThrough(double* input, double* output) {
 	copy(input, in_data_, inp_);
 	in_data_[inp_] = 1;

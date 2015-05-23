@@ -7,11 +7,6 @@
 #include <random>
 
 
-// TODO do sometihng with chromosome type, cant go around like this
-// TODO change all array parameters
-// TODO crossing maybe average
-
-
 // Constructor, creates indices array that is used to shuffle selection,
 // creates auxiliary population array to copy the population and use it
 // to create new one.
@@ -34,7 +29,7 @@ GA::GA(int c_size, int pop_size, double mutation_prob, int tournament_size)
 // Destructor, clean up auxiliary arrays
 GA::~GA() {
 	delete indices;
-	for (int i = 0; i < pop_size; i++) {
+	for (int i = 0; i < pop_size_; i++) {
 		delete population_[i];
 	}
 }

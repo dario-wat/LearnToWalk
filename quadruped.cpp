@@ -14,6 +14,10 @@
 #include "evaluator.hpp"
 
 
+// ga.cpp
+// TODO crossing maybe average
+
+
 // TODO in robot.cpp random initialization is maybe not so random
 // TODO in robot.cpp walk function, there was some weird walking code
 
@@ -22,8 +26,7 @@ using std::endl;
 
 
 // Simulation window size
-static const int WINDOW_WIDTH = 800;
-static const int WINDOW_HEIGHT = 480;
+
 
 // Constants for world initialization
 static const double GRAVITY = -9.81;
@@ -31,8 +34,8 @@ static const double CFM_P = 10e-10;
 static const double ERP_P = 0.2;
 
 
-static const double SIM_TIME = 3.0;
-static const int GENERATIONS = 100;
+static const double SIM_TIME = 20.0;
+static const int GENERATIONS = 300;
 static const int POP_SIZE = 100;
 
 static const int in_l = LEG_NUM + LEG_NUM * (JT_NUM+1);
@@ -104,9 +107,9 @@ void simulate() {
 			delete rob;
 			cout << "Ind: " << i << " Fitness: " << fitness[i] << endl;
 		}
-		
 		cout << endl;
 		ga->evolve(fitness, population);
+		GA::printChromosome(population[0], c_size);
 		cout << j<< endl;
 	}
 }
@@ -127,9 +130,6 @@ void initializeCallbacks(dsFunctions* fn) {
 	fn->path_to_textures = "textures";
 }
 
-
-
-
 int main(int argc, char** argv) {
 	srand(time(NULL));
 	
@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
 	initializeCallbacks(&fn);
 	evaluator = new Evaluator(world, space, 0.005, SIM_TIME);
 	
-	// TODO he set gravitiy as = in the beginning
+	// TODO he set gravitiy as 0 in the beginning
 	dWorldSetGravity(world, 0, 0, GRAVITY);
 	
 	// TODO he did something else here
@@ -155,7 +155,7 @@ int main(int argc, char** argv) {
 		population[i] = new double[c_size];
 		GA::randomizeChromosome(population[i], c_size);
 	}
-	ga = new GA(c_size, POP_SIZE, 0.05, 10);
+	ga = new GA(c_size, POP_SIZE, 0.1, 15);
 
 	// Run endless loop
 	//dsSimulationLoop(argc, argv, WINDOW_WIDTH, WINDOW_HEIGHT, &fn);

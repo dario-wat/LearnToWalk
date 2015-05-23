@@ -58,7 +58,7 @@ double Evaluator::evaluate(Robot* robot, ANN* ann) {
 	while (time_since_start_ < sim_time_) {
 		time_since_start_ += sim_step_;
 
-		dSpaceCollide(space_, &data, &nearCallback);		// TODO middle argument is data
+		dSpaceCollide(space_, &data, &nearCallback);
 		dWorldStep(world_, sim_step_);
 		
 		robot_->readSensors(hoof_force, angle, upset_force);
