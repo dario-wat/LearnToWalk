@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <random>
+#include <cstdio>
 
 
 // Constructor, creates indices array that is used to shuffle selection,
@@ -139,7 +140,7 @@ void GA::randomizeChromosome(double* chromosome, int size) {
 // Used for debugging
 void GA::printChromosome(double* chromosome, int size) {
 	for (int i = 0; i < size; i++) {
-		std::cout << chromosome[i] << " ";
+		printf("%a ", chromosome[i]);		// Hex for precision
 	}
 	std::cout << std::endl;
 }

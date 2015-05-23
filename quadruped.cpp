@@ -6,12 +6,15 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+
 #include <ode/ode.h>
 #include <drawstuff/drawstuff.h>
+
 #include "robot.hpp"
 #include "ga.hpp"
 #include "ann.hpp"
 #include "evaluator.hpp"
+#include "visualizator.hpp"
 
 
 // ga.cpp
@@ -22,6 +25,7 @@
 // TODO in robot.cpp walk function, there was some weird walking code
 
 using std::cout;
+using std::cin;
 using std::endl;
 
 
@@ -109,6 +113,11 @@ void simulate() {
 		}
 		cout << endl;
 		ga->evolve(fitness, population);
+		rob = new Robot(world, space, 0.005);
+		decode(f_layer, s_layer, population[0]);
+		ann->setWeights(f_layer, s_layer);
+		cout << evaluator->evaluate(rob, ann) << endl;
+		delete rob;
 		GA::printChromosome(population[0], c_size);
 		cout << j<< endl;
 	}
@@ -161,7 +170,22 @@ int main(int argc, char** argv) {
 	//dsSimulationLoop(argc, argv, WINDOW_WIDTH, WINDOW_HEIGHT, &fn);
 	simulate();
 
+	// double chr[c_size];
+	// for (int i = 0; i < c_size; i++) {
+	// 	scanf("%la", chr+i);
+	// }
+	// rob = new Robot(world, space, 0.005);
+	// decode(f_layer, s_layer, chr);
+	// ann->setWeights(f_layer, s_layer);
+	// cout << evaluator->evaluate(rob, ann) << endl;
 
+	// decode(f_layer, s_layer, chr);
+	// GA::printChromosome(chr, c_size);
+	// ann->setWeights(f_layer, s_layer);
+	// Robot* r = new Robot(world, space, 0.005);
+	// cout << "Eval " << evaluator->evaluate(r, ann);
+	//Visualizator::simulationLoop(argc, argv, r, ann, world, space, 0.005);
+	
 	// Finalization and exiting
 	dSpaceDestroy(space);
 	dWorldDestroy(world);
