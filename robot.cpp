@@ -85,7 +85,6 @@ static const dReal axis_y[LEG_NUM][LINK_NUM+1] = {{ 0, 1,-1}, { 0, 1,-1}, { 0, 1
 static const dReal axis_z[LEG_NUM][LINK_NUM+1] = {{-1, 0, 0}, {-1, 0, 0}, { 1, 0, 0}, { 1, 0, 0}};
 
 
-
 // Creates torso of the robot and adds it to the world
 void Robot::createTorso() {
 	dMass mass;
@@ -291,7 +290,7 @@ void Robot::PIDControl(double degree1, double degree2, double degree3, int legnu
 	diff = degree3 - tmp;						
 	diffsum[legnum][2] += diff;		
 	omega = dJointGetHingeAngleRate(leg[legnum][1].joint);	
-	u = kp * diff + ki*diffsum[legnum][2] - kd * omega;								
+	u = kp * diff + ki*diffsum[legnum][2] - kd * omega;			
 	dJointSetHingeParam(leg[legnum][1].joint,  dParamVel, u);	
 	dJointSetHingeParam(leg[legnum][1].joint, dParamFMax, fMax);
 }
@@ -311,7 +310,7 @@ void Robot::walk() {
 // Sets new state for the robot next move
 void Robot::setNewState(const dReal (& new_state)[LEG_NUM][JT_NUM+1]) {
 	for (int i = 0; i < LEG_NUM; i++) {
-		for (int j = 0; j < JT_NUM; j++) {
+		for (int j = 0; j < JT_NUM+1; j++) {
 			curr_state[i][j] = new_state[i][j];
 		}
 	}

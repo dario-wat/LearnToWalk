@@ -3,6 +3,8 @@
 
 static const double CFM_P = 10e-10;
 static const double ERP_P = 0.2;
+static const double para_K = 100000.0;	//elastic modulus
+static const double para_C = 1000.0;	//viscous modulus
 
 Robot* Visualizator::robot_;
 ANN* Visualizator::ann_;
@@ -15,9 +17,14 @@ dJointGroupID Visualizator::contact_group_;
 dContact Visualizator::contact[CONTACT_ARR_SIZE];
 dReal Visualizator::input[INPUT_SIZE];
 dReal Visualizator::new_state[LEG_NUM][JT_NUM+1];
+dReal Visualizator::hoof_force[LEG_NUM];
+dReal Visualizator::angle[LEG_NUM][JT_NUM+1];
+dReal Visualizator::upset_force[2];
 
-	
+
+// Callback for collisions when things get near.
 void Visualizator::nearCallback(void *data, dGeomID o1, dGeomID o2) {
+	double sim_step_ = *((double*) data);
 	dBodyID b1 = dGeomGetBody(o1);
 	dBodyID b2 = dGeomGetBody(o2);
 	if (b1 && b2 && dAreConnectedExcluding(b1, b2, dJointTypeContact)) {
@@ -28,35 +35,55 @@ void Visualizator::nearCallback(void *data, dGeomID o1, dGeomID o2) {
 	for (int i = 0; i < n; i++) {
 		contact[i].surface.mode = dContactSoftERP | dContactSoftCFM;
 		contact[i].surface.mu = 100.0; 
-		contact[i].surface.soft_erp = ERP_P;//(one_step*para_K)/(one_step*para_K + para_C);		//ERP
-		contact[i].surface.soft_cfm = CFM_P;//1.0/(one_step*para_K+para_C);		//CFM
+		contact[i].surface.soft_erp = (sim_step_*para_K)/(sim_step_*para_K + para_C);		//ERP
+		contact[i].surface.soft_cfm = 1.0/(sim_step_*para_K+para_C);		//CFM
 		dJointID c = dJointCreateContact(world_, contact_group_, &contact[i]);
 		dJointAttach(c, b1, b2);
 	}
 }
 
+// Exit when q pressed
 void Visualizator::command(int cmd) {
 	if (cmd == 'q') {
 		dsStop();
 	}
 }
 
+// Visualize things
 void Visualizator::simLoop(int pause) {
-	dSpaceCollide(space_, 0, nearCallback);
-	dWorldStep(world_, sim_step_);
-	ann_->feedThrough(&input[0], &new_state[0][0]);
-	robot_->setNewState(new_state);
-	robot_->walk();
-	robot_->draw();
-	dJointGroupEmpty(contact_group_);
+	if (!pause) {
+		dSpaceCollide(space_, &sim_step_, nearCallback);
+		dWorldStep(world_, sim_step_);
+		
+		robot_->readSensors(hoof_force, angle, upset_force);
+		createInput();
+		ann_->feedThrough(&input[0], &new_state[0][0]);
+		robot_->setNewState(new_state);
+		robot_->walk();
+		robot_->draw();
+		
+		dJointGroupEmpty(contact_group_);
+	}
 }
 
+// Clear joint group at the end
 void Visualizator::stop() {
-	// TODO do i enter here ever?
-	std::cout << "just got here";
 	dJointGroupDestroy(contact_group_);
 }
 
+// Helper function for creating input
+void Visualizator::createInput() {
+	for (int i = 0; i < LEG_NUM; i++) {
+		input[i] = hoof_force[i];
+	}
+	for (int i = 0; i < LEG_NUM; i++) {
+		for (int j = 0; j < JT_NUM+1; j++) {
+			input[LEG_NUM + i*(JT_NUM+1) + j] = angle[i][j];
+		}
+	}
+}
+
+// Initializes data and start drawing process
 void Visualizator::simulationLoop(int argc, char** argv, Robot* robot, ANN* ann,
 	dWorldID world, dSpaceID space, double sim_step) {
 

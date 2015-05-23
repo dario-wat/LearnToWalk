@@ -1,6 +1,6 @@
 // This is how I managed to compile this
-//  g++ quadruped.cpp robot.cpp ga.cpp ann.cpp -lode -lpthread 
-// -ldrawstuff -lX11 -lglut -lGL -lGLU -std=c++11 -DdDOUBLE
+//  g++ quadruped.cpp robot.cpp ga.cpp ann.cpp evaluator.cpp visualizator.cpp 
+// -lode -lpthread -ldrawstuff -lX11 -lglut -lGL -lGLU -std=c++11 -DdDOUBLE
 
 #include <iostream>
 #include <cstdio>
@@ -20,6 +20,12 @@
 // ga.cpp
 // TODO crossing maybe average
 
+// ann.cpp
+// TODO activation function
+
+//evaluator
+// TODO what fitness??
+// TODO send erp and cfn params thrpough the constructor instead of using constants
 
 // TODO in robot.cpp random initialization is maybe not so random
 // TODO in robot.cpp walk function, there was some weird walking code
@@ -29,7 +35,8 @@ using std::cin;
 using std::endl;
 
 
-// Simulation window size
+static const double para_K = 100000.0;	//elastic modulus
+static const double para_C = 1000.0;	//viscous modulus
 
 
 // Constants for world initialization
@@ -113,11 +120,6 @@ void simulate() {
 		}
 		cout << endl;
 		ga->evolve(fitness, population);
-		rob = new Robot(world, space, 0.005);
-		decode(f_layer, s_layer, population[0]);
-		ann->setWeights(f_layer, s_layer);
-		cout << evaluator->evaluate(rob, ann) << endl;
-		delete rob;
 		GA::printChromosome(population[0], c_size);
 		cout << j<< endl;
 	}
@@ -143,7 +145,7 @@ int main(int argc, char** argv) {
 	srand(time(NULL));
 	
 	// Initialize things for ODE
-	dInitODE();
+	dInitODE2();
 	world = dWorldCreate();        			// for dynamics
 	space = dHashSpaceCreate(0);        		// for collision
 	dGeomID ground = dCreatePlane(space, 0, 0, 1, 0);	// ground
@@ -155,8 +157,8 @@ int main(int argc, char** argv) {
 	dWorldSetGravity(world, 0, 0, GRAVITY);
 	
 	// TODO he did something else here
-	dWorldSetCFM(world, CFM_P);
-	dWorldSetERP(world, ERP_P);
+	dWorldSetCFM(world, 1.0/(0.005*para_K+para_C));
+	dWorldSetERP(world, (0.005*para_K)/(0.005*para_K + para_C));
 	
 	ann = new ANN(in_l, mid_l, out_l);
 
@@ -168,23 +170,20 @@ int main(int argc, char** argv) {
 
 	// Run endless loop
 	//dsSimulationLoop(argc, argv, WINDOW_WIDTH, WINDOW_HEIGHT, &fn);
+#ifndef DRAWIT
 	simulate();
-
-	// double chr[c_size];
-	// for (int i = 0; i < c_size; i++) {
-	// 	scanf("%la", chr+i);
-	// }
-	// rob = new Robot(world, space, 0.005);
-	// decode(f_layer, s_layer, chr);
-	// ann->setWeights(f_layer, s_layer);
-	// cout << evaluator->evaluate(rob, ann) << endl;
-
-	// decode(f_layer, s_layer, chr);
-	// GA::printChromosome(chr, c_size);
-	// ann->setWeights(f_layer, s_layer);
-	// Robot* r = new Robot(world, space, 0.005);
-	// cout << "Eval " << evaluator->evaluate(r, ann);
-	//Visualizator::simulationLoop(argc, argv, r, ann, world, space, 0.005);
+#endif
+#ifdef DRAWIT
+	double chr[c_size];
+	for (int i = 0; i < c_size; i++) {
+		scanf("%la", chr+i);
+		cout << chr[i] << " ";
+	}
+	rob = new Robot(world, space, 0.005);
+	decode(f_layer, s_layer, chr);
+	ann->setWeights(f_layer, s_layer);
+	Visualizator::simulationLoop(argc, argv, rob, ann, world, space, 0.005);
+#endif
 	
 	// Finalization and exiting
 	dSpaceDestroy(space);

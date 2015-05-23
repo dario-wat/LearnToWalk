@@ -7,6 +7,7 @@
 #include "ann.hpp"
 
 
+// Static class
 class Visualizator {
 
 private:
@@ -15,6 +16,7 @@ private:
 	static const int WINDOW_WIDTH = 800;
 	static const int WINDOW_HEIGHT = 480;
 
+	// Things needed for visualization
 	static Robot* robot_;
 	static ANN* ann_;
 	static dWorldID world_;
@@ -23,7 +25,11 @@ private:
 	static dsFunctions fn_;
 	static dJointGroupID contact_group_;
 
+	// Auxiliary arrays
 	static dContact contact[CONTACT_ARR_SIZE];
+	static dReal hoof_force[LEG_NUM];
+	static dReal angle[LEG_NUM][JT_NUM+1];
+	static dReal upset_force[2];
 	static dReal input[INPUT_SIZE];
 	static dReal new_state[LEG_NUM][JT_NUM+1];
 
@@ -32,10 +38,11 @@ private:
 	static void simLoop(int pause);
 	static void command(int cmd);
 	static void stop();
+	static void createInput();
 
 public:
-	static void simulationLoop(int argc, char** argv, Robot* robot, ANN* ann, dWorldID world,
-		dSpaceID space, double sim_step);
+	static void simulationLoop(int argc, char** argv, Robot* robot, ANN* ann,
+		dWorldID world, dSpaceID space, double sim_step);
 
 };
 

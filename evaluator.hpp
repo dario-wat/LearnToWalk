@@ -12,23 +12,21 @@ private:
 	static const int INPUT_SIZE = LEG_NUM + LEG_NUM * (JT_NUM+1);
 	static const int CONTACT_ARR_SIZE = 20;
 
-	static constexpr double UPSET_THRESHOLD = 10.0;
-	static constexpr double CFM_P = 10e-10;
-	static constexpr double ERP_P = 0.2;
-
+	// Structure for sending the data into callback function
 	typedef struct {
 		dWorldID world_;
 		dJointGroupID contact_group_;
 		dContact* contact;
 		int size;
+		double sim_step_;
 	} CallbackData;
 
-	CallbackData data;
+	CallbackData data;				// Variable for that data
 
-	const double sim_step_;
-	const double sim_time_;
-	const dWorldID world_;
-	const dSpaceID space_;
+	const double sim_step_;			// One step in simulation
+	const double sim_time_;			// How long to simulate
+	const dWorldID world_;			// World to use
+	const dSpaceID space_;			// Space to use
 	
 	// Auxiliary arrays
 	dReal hoof_force[LEG_NUM];
@@ -38,10 +36,10 @@ private:
 	dReal new_state[LEG_NUM][JT_NUM+1];
 	dContact contact[CONTACT_ARR_SIZE];
 
-	dJointGroupID contact_group_;
-	Robot* robot_;
-	ANN* ann_;
-	double time_since_start_;
+	dJointGroupID contact_group_;		// Joint group for collisions
+	Robot* robot_;						// Robot to evaluate
+	ANN* ann_;							// Ann for that robot
+	double time_since_start_;			// Time counter
 
 private:
 	static void nearCallback(void *data, dGeomID o1, dGeomID o2);

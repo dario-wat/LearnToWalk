@@ -1,5 +1,5 @@
 #include "ann.hpp"
-
+#include <cmath>
 
 // Constructor, creates all arrays for weights and nodes. Adds bias term to
 // input and hidden nodes.
@@ -46,9 +46,16 @@ static void multiply(double *A, double *B, double *C, int n, int m, int o) {
 // Activation function, ReLU
 static void activation(double *v, int n) {
 	for (int i = 0; i < n; i++) {
-		if (v[i] < 0) {
-			v[i] /= 100;
-		}
+		// if (v[i] < 0) {
+		// 	v[i] /= 100;
+		// }
+		v[i] = tanh(v[i]);
+	}
+}
+
+static void activationOut(double* v, int n) {
+	for (int i = 0; i < n; i++) {
+		v[i] = 1.0 / (1.0 + exp(-v[i]));
 	}
 }
 
@@ -62,5 +69,5 @@ void ANN::feedThrough(double* input, double* output) {
 	mid_data_[hid_] = 1;
 
 	multiply(sl_, mid_data_, output, out_, hid_+1, 1);
-	activation(output, out_);
+	activationOut(output, out_);
 }
