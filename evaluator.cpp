@@ -102,5 +102,6 @@ double Evaluator::evaluate(Robot* robot, ANN* ann) {
 	
 	// double res = robot_->getXPosition();
 	// return res < 0 ? 0 : res;
+	result += robot_->getXPosition() * 100;
 	return result < 0 ? 0 : result;
 }
