@@ -121,8 +121,8 @@ static void simulate() {
 			cerr << "Masta Process starts sending.\n";
 			int receiver = 1;
 			for (int receiver = 1; receiver<size;receiver++) {
-				int start = receiver * POP_SIZE / size;
-				int end = (receiver+1) * POP_SIZE / size;
+				int start = receiver * L + MIN(receiver, R);
+				int end = start + (POP_SIZE + size - receiver-1)/size;
 				cerr << "master sends individuals " << start << "-" << end-1 << " to slave " << receiver << endl;
 				for (int i=start;i<end;i++) {
 					MPI_Send(population[i], c_size, MPI_DOUBLE, receiver, 0, MPI_COMM_WORLD);
@@ -159,8 +159,8 @@ static void simulate() {
 			}
 		} else {
 			for (int sender=1;sender<size;sender++) {
-				int start = sender * POP_SIZE / size;
-				int end = (sender+1) * POP_SIZE / size;
+				int start = sender * L + MIN(sender, R);
+				int end = start + (POP_SIZE + size - sender-1)/size;
 
 				for (int i=start;i<end;i++) {
 					cerr << "Master receives idividual " << i << " from slave " << sender << endl;
