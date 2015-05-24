@@ -15,6 +15,8 @@
 #include "evaluator.hpp"
 #include "visualizator.hpp"
 
+#include <mpi.h>
+
 
 //TODO CFM and ERP parameters??
 
@@ -69,6 +71,10 @@ static std::vector<double> fitness(POP_SIZE);
 dWorldID world;
 dSpaceID space;
 
+// MPI
+int size;
+int rank;
+
 
 // Decodes chromosome into 2 weight matrices
 static void decode(double (& fl)[mid_l * (in_l+1)],
@@ -92,34 +98,89 @@ static void decode(double (& fl)[mid_l * (in_l+1)],
 
 // Runs learning process
 static void simulate() {
+	
+
+	int minIndex = rank * POP_SIZE / size;
+	int maxIndex = (rank+1) * POP_SIZE / size;
+
 	for (int j = 0; j < GENERATIONS; j++) {
-		for (int i = 0; i < POP_SIZE; i++) {
+		// MPI_Scatter(population, )
+		if (rank == 0) {
+			cerr << "Masta Process starts sending.\n";
+			int receiver = 1;
+			for (int receiver = 1; receiver<size;receiver++) {
+				int start = receiver * POP_SIZE / size;
+				int end = (receiver+1) * POP_SIZE / size;
+				for (int i=start;i<end;i++) {
+					MPI_Send(population[i], c_size, MPI_DOUBLE, receiver, 0, MPI_COMM_WORLD);
+				}
+			}
+			cerr << "Masta Process is done sending.\n";
+		} else {
+			//cout << "rank " << rank << endl;
+			for (int i=minIndex;i<maxIndex;i++) {
+				MPI_Recv(population[i], c_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			}
+		}
+
+		for (int i = minIndex; i < maxIndex; i++) {
+			//cout << "rank " << rank << endl;
 			rob = new Robot(world, space, SIM_STEP);
 			decode(f_layer, s_layer, population[i]);
 			ann->setWeights(f_layer, s_layer);
 			fitness[i] = evaluator->evaluate(rob, ann);
 			delete rob;
-			cerr << "Ind: " << i << " Fitness: " << fitness[i] << endl;
+			if (i == 0 || i == 1) {
+				cerr << "Ind: " << i << " Fitness: " << fitness[i] << endl;	
+			}
+			
 		}
 		cerr << endl;
-		
-		int best_idx = -1;
-		double best_val = 0;
-		for (int i = 0; i < POP_SIZE; i++) {
-			if (fitness[i] > best_val) {
-				best_val = fitness[i];
-				best_idx = i;
+
+		// gather to master
+		//MPI_Gather()
+		if (rank != 0) {
+			for (int i=minIndex;i<maxIndex;i++) {
+				MPI_Send(population[i], c_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+				MPI_Send(&fitness[i], 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+			}
+		} else {
+			for (int sender=1;sender<size;sender++) {
+				int start = sender * POP_SIZE / size;
+				int end = (sender+1) * POP_SIZE / size;
+				for (int i=start;i<end;i++) {
+					MPI_Recv(population[i], c_size, MPI_DOUBLE, sender, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+					MPI_Recv(&fitness[i], 1, MPI_DOUBLE, sender, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+				}
 			}
 		}
-		cout << "Generation: " << j << " Score: " << fitness[best_idx] << endl;		
-		GA::printChromosome(population[best_idx], c_size);
 
-		ga->evolve(fitness, population);
+		if (rank==0) {
+			int best_idx = -1;
+			double best_val = 0;
+			for (int i = 0; i < POP_SIZE; i++) {
+				if (fitness[i] > best_val) {
+					best_val = fitness[i];
+					best_idx = i;
+				}
+			}
+			cerr << "Generation: " << j << " Score: " << fitness[best_idx] << endl;		
+			cout << "Generation: " << j << " Score: " << fitness[best_idx] << endl;		
+			//GA::printChromosome(population[best_idx], c_size);
+
+			ga->evolve(fitness, population);
+		}
 	}
 }
 
 
 int main(int argc, char** argv) {
+	/* Initialize MPI */
+
+	MPI_Init(&argc, &argv);
+	MPI_Comm_size(MPI_COMM_WORLD, &size);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
 	srand(time(NULL));
 	
 	// Initialize things for ODE
