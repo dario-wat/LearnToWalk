@@ -55,11 +55,11 @@ static const double SIM_STEP = 0.005;
 static const int GENERATIONS = 300;
 static const int POP_SIZE = 100;
 
-static const double MUT_PROB = 0.2;
+static const double MUT_PROB = 0.1;
 static const int TOUR_SIZE = 10;
 
 static const int in_l = LEG_NUM + LEG_NUM * (JT_NUM+1);
-static const int mid_l = 14;
+static const int mid_l = 12;
 static const int out_l = LEG_NUM*(JT_NUM+1);
 static const int c_size = (in_l+1)*mid_l + (mid_l+1)*out_l;
 
