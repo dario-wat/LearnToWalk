@@ -227,8 +227,9 @@ Robot::Robot(dWorldID world, dSpaceID space, double one_step)
 
 	for (int i = 0; i < LEG_NUM; i++) {
 		for (int j = 0; j < JT_NUM+1; j++) {
-			//curr_state[i][j] = (rand() - RAND_MAX/2.) / (RAND_MAX/1.);
-			curr_state[i][j] = 0.0;
+			curr_state[i][j] = (rand() - RAND_MAX/2.) / (2.*RAND_MAX);
+			// std::cerr << curr_state[i][j] << std::endl;
+			//curr_state[i][j] = 0.0;
 		}
 	}
 }

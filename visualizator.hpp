@@ -24,6 +24,7 @@ private:
 	static double sim_step_;
 	static dsFunctions fn_;
 	static dJointGroupID contact_group_;
+	static double time_since_start_;
 
 	// Auxiliary arrays
 	static dContact contact[CONTACT_ARR_SIZE];

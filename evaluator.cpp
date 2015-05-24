@@ -71,6 +71,10 @@ double Evaluator::evaluate(Robot* robot, ANN* ann) {
 	time_since_start_ = 0;
 	prev_pos_ = 0;
 
+
+	// TODO this thing added
+	double inp[4];
+
 	double result = 0;
 	while (time_since_start_ < sim_time_) {
 		time_since_start_ += sim_step_;
@@ -78,10 +82,25 @@ double Evaluator::evaluate(Robot* robot, ANN* ann) {
 		dSpaceCollide(space_, &data, &nearCallback);
 		dWorldStep(world_, sim_step_);
 
-		robot_->readSensors(hoof_force, angle, upset_force);
-		createInput();
-		ann_->feedThrough(&input[0], &new_state[0][0]);
-		robot_->setNewState(new_state);
+		
+		if (time_since_start_ > 0.1) {
+			robot_->readSensors(hoof_force, angle, upset_force);
+
+
+			//createInput();
+			for (int i = 0; i < LEG_NUM; i++) {
+				inp[0] = hoof_force[i];
+				inp[1] = angle[i][0];
+				inp[2] = angle[i][1];
+				inp[3] = angle[i][2];
+				ann_->feedThrough(&inp[0], &new_state[i][0]);		
+			}
+
+
+			robot_->setNewState(new_state);
+		}
+
+
 		robot_->walk();
 
 		double curr_pos = robot_->getXPosition();
@@ -102,6 +121,6 @@ double Evaluator::evaluate(Robot* robot, ANN* ann) {
 	
 	// double res = robot_->getXPosition();
 	// return res < 0 ? 0 : res;
-	result += robot_->getXPosition() * 100;
+	//result += robot_->getXPosition() * 100;
 	return result < 0 ? 0 : result;
 }

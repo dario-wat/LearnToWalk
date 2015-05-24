@@ -13,6 +13,7 @@ dSpaceID Visualizator::space_;
 double Visualizator::sim_step_;
 dsFunctions Visualizator::fn_;
 dJointGroupID Visualizator::contact_group_;
+double Visualizator::time_since_start_;
 
 dContact Visualizator::contact[CONTACT_ARR_SIZE];
 dReal Visualizator::input[INPUT_SIZE];
@@ -51,14 +52,34 @@ void Visualizator::command(int cmd) {
 
 // Visualize things
 void Visualizator::simLoop(int pause) {
+
+	// TODO this thing added
+	double inp[4];
+
+
 	if (!pause) {
+		time_since_start_ += sim_step_;
+
 		dSpaceCollide(space_, &sim_step_, nearCallback);
 		dWorldStep(world_, sim_step_);
 		
-		robot_->readSensors(hoof_force, angle, upset_force);
-		createInput();
-		ann_->feedThrough(&input[0], &new_state[0][0]);
-		robot_->setNewState(new_state);
+		if (time_since_start_ > 0.1) {
+			robot_->readSensors(hoof_force, angle, upset_force);
+
+
+			//createInput();
+			for (int i = 0; i < LEG_NUM; i++) {
+				inp[0] = hoof_force[i];
+				inp[1] = angle[i][0];
+				inp[2] = angle[i][1];
+				inp[3] = angle[i][2];
+				ann_->feedThrough(&inp[0], &new_state[i][0]);		
+			}
+
+
+			robot_->setNewState(new_state);
+		}		
+
 		robot_->walk();
 		robot_->draw();
 		
@@ -93,6 +114,7 @@ void Visualizator::simulationLoop(int argc, char** argv, Robot* robot, ANN* ann,
 	space_ = space;
 	sim_step_ = sim_step;
 	contact_group_ = dJointGroupCreate(0);
+	time_since_start_ = 0;
 
 	fn_.version = DS_VERSION;
 	fn_.start = 0;

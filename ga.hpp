@@ -8,7 +8,8 @@
 class GA {
 
 private:
-	static constexpr double MUTATE_DEV = 5;	// stddev for mutations
+	static constexpr double MUTATE_DEV = 1;		// stddev for mutations
+	static constexpr double DIV_FACTOR = 8.0; 	// used for random span
 
 	std::default_random_engine generator;	// For random for mutation
 	int* indices;							// For shuffling for selection
