@@ -99,9 +99,7 @@ static void decode(double (& fl)[mid_l * (in_l+1)],
 
 // Runs learning process
 static void simulate() {
-	int L = POP_SIZE/P;
-	R = N%P;
-	I = (N+P-p-1)/P;
+	
 
 	int minIndex = rank * POP_SIZE / size;
 	int maxIndex = (rank+1) * POP_SIZE / size;
