@@ -99,6 +99,9 @@ static void decode(double (& fl)[mid_l * (in_l+1)],
 
 // Runs learning process
 static void simulate() {
+	int L = POP_SIZE/P;
+	R = N%P;
+	I = (N+P-p-1)/P;
 
 	int minIndex = rank * POP_SIZE / size;
 	int maxIndex = (rank+1) * POP_SIZE / size;
@@ -106,6 +109,7 @@ static void simulate() {
 	for (int j = 0; j < GENERATIONS; j++) {
 		// MPI_Scatter(population, )
 		if (rank == 0) {
+			cerr << "Masta Process starts sending.\n";
 			int receiver = 1;
 			for (int receiver = 1; receiver<size;receiver++) {
 				int start = receiver * POP_SIZE / size;
@@ -114,6 +118,7 @@ static void simulate() {
 					MPI_Send(population[i], c_size, MPI_DOUBLE, receiver, 0, MPI_COMM_WORLD);
 				}
 			}
+			cerr << "Masta Process is done sending.\n";
 		} else {
 			//cout << "rank " << rank << endl;
 			for (int i=minIndex;i<maxIndex;i++) {
@@ -162,8 +167,9 @@ static void simulate() {
 					best_idx = i;
 				}
 			}
+			cerr << "Generation: " << j << " Score: " << fitness[best_idx] << endl;		
 			cout << "Generation: " << j << " Score: " << fitness[best_idx] << endl;		
-			GA::printChromosome(population[best_idx], c_size);
+			//GA::printChromosome(population[best_idx], c_size);
 
 			ga->evolve(fitness, population);
 		}
