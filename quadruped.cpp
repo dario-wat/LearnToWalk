@@ -151,6 +151,7 @@ static void simulate() {
 		//MPI_Gather()
 		if (rank != 0) {
 			for (int i=minIndex;i<maxIndex;i++) {
+				cerr << "Slave " << rank << " sends individual " << i << endl;
 				MPI_Send(population[i], c_size, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 				MPI_Send(&fitness[i], 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 			}
@@ -158,7 +159,9 @@ static void simulate() {
 			for (int sender=1;sender<size;sender++) {
 				int start = sender * POP_SIZE / size;
 				int end = (sender+1) * POP_SIZE / size;
+
 				for (int i=start;i<end;i++) {
+					cerr << "Master receives idividual " << i << " from slave " << sender;
 					MPI_Recv(population[i], c_size, MPI_DOUBLE, sender, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 					MPI_Recv(&fitness[i], 1, MPI_DOUBLE, sender, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 				}
