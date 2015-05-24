@@ -8,7 +8,7 @@
 class GA {
 
 private:
-	static constexpr double MUTATE_DEV = 1.0;	// stddev for mutations
+	static constexpr double MUTATE_DEV = 0.5;	// stddev for mutations
 
 	std::default_random_engine generator;	// For random for mutation
 	int* indices;							// For shuffling for selection

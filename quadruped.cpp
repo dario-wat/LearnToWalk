@@ -1,6 +1,8 @@
 // This is how I managed to compile this
-//  g++ quadruped.cpp robot.cpp ga.cpp ann.cpp evaluator.cpp visualizator.cpp 
-// -lode -lpthread -ldrawstuff -lX11 -lglut -lGL -lGLU -std=c++11 -DdDOUBLE
+// mpic++ quadruped.cpp robot.cpp ga.cpp ann.cpp evaluator.cpp visualizator.cpp -lode -lpthread -ldrawstuff -lX11 -lglut -lGL -lGLU -std=c++11 -DdDOUBLE
+
+// add -DDRAWIT for drawing, -DGACUT to use cut, otherwise use other thing, 
+// -DELITISM to use elitism
 
 #include <iostream>
 #include <cstdio>
@@ -53,8 +55,11 @@ static const double SIM_STEP = 0.005;
 static const int GENERATIONS = 300;
 static const int POP_SIZE = 100;
 
+static const double MUT_PROB = 0.2;
+static const int TOUR_SIZE = 10;
+
 static const int in_l = LEG_NUM + LEG_NUM * (JT_NUM+1);
-static const int mid_l = 12;
+static const int mid_l = 14;
 static const int out_l = LEG_NUM*(JT_NUM+1);
 static const int c_size = (in_l+1)*mid_l + (mid_l+1)*out_l;
 
@@ -137,10 +142,8 @@ static void simulate() {
 			ann->setWeights(f_layer, s_layer);
 			fitness[i] = evaluator->evaluate(rob, ann);
 			delete rob;
-			
+
 			cerr << "Ind: " << i << " Fitness: " << fitness[i] << endl;	
-			
-			
 		}
 		cerr << endl;
 
@@ -182,6 +185,20 @@ static void simulate() {
 
 
 int main(int argc, char** argv) {
+	cout << "ANN Hid: " << mid_l << " Tour size: " << TOUR_SIZE << " Mut prob: " << MUT_PROB << endl;
+#ifdef GACUT
+	cout << "Cut" << endl;
+#endif
+#ifndef GACUT
+	cout << "Not cut" << endl;
+#endif
+#ifdef ELITISM
+	cout << "Using elitism" << endl;
+#endif
+#ifndef ELITISM
+	cout << "Not using elitism" << endl;
+#endif
+
 	/* Initialize MPI */
 
 	MPI_Init(&argc, &argv);
@@ -205,7 +222,7 @@ int main(int argc, char** argv) {
 		population[i] = new double[c_size];
 		GA::randomizeChromosome(population[i], c_size);
 	}
-	ga = new GA(c_size, POP_SIZE, 0.005, 3);
+	ga = new GA(c_size, POP_SIZE, MUT_PROB, TOUR_SIZE);
 	ann = new ANN(in_l, mid_l, out_l);
 	evaluator = new Evaluator(world, space, SIM_STEP, SIM_TIME);
 
