@@ -18,6 +18,7 @@
 
 #include <mpi.h>
 
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 //TODO CFM and ERP parameters??
 
@@ -99,10 +100,15 @@ static void decode(double (& fl)[mid_l * (in_l+1)],
 
 // Runs learning process
 static void simulate() {
+	int L = POP_SIZE / size;
+	int R = POP_SIZE % size;
+	int I = (POP_SIZE + size - rank-1)/size;
 	
+	int minIndex = rank * L + MIN(rank, R);
+	int maxIndex = minIndex + I;
 
-	int minIndex = rank * POP_SIZE / size;
-	int maxIndex = (rank+1) * POP_SIZE / size;
+	// int minIndex = rank * POP_SIZE / size;
+	// int maxIndex = (rank+1) * POP_SIZE / size;
 
 	for (int j = 0; j < GENERATIONS; j++) {
 		// MPI_Scatter(population, )
@@ -131,9 +137,9 @@ static void simulate() {
 			ann->setWeights(f_layer, s_layer);
 			fitness[i] = evaluator->evaluate(rob, ann);
 			delete rob;
-			if (i == 0 || i == 1) {
-				cerr << "Ind: " << i << " Fitness: " << fitness[i] << endl;	
-			}
+			
+			cerr << "Ind: " << i << " Fitness: " << fitness[i] << endl;	
+			
 			
 		}
 		cerr << endl;
@@ -167,7 +173,7 @@ static void simulate() {
 			}
 			cerr << "Generation: " << j << " Score: " << fitness[best_idx] << endl;		
 			cout << "Generation: " << j << " Score: " << fitness[best_idx] << endl;		
-			//GA::printChromosome(population[best_idx], c_size);
+			GA::printChromosome(population[best_idx], c_size);
 
 			ga->evolve(fitness, population);
 		}
