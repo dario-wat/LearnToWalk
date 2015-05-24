@@ -69,7 +69,9 @@ double Evaluator::evaluate(Robot* robot, ANN* ann) {
 	this->robot_ = robot;
 	this->ann_ = ann;
 	time_since_start_ = 0;
+	prev_pos_ = 0;
 
+	double result = 0;
 	while (time_since_start_ < sim_time_) {
 		time_since_start_ += sim_step_;
 
@@ -82,6 +84,15 @@ double Evaluator::evaluate(Robot* robot, ANN* ann) {
 		robot_->setNewState(new_state);
 		robot_->walk();
 
+		double curr_pos = robot_->getXPosition();
+		if (curr_pos - prev_pos_ > 0.01) {
+			result += 1;
+			prev_pos_ = curr_pos;
+		} else if (curr_pos - prev_pos_ < -0.01) {
+			result -= 1;
+			prev_pos_ = curr_pos;
+		}
+
 		dJointGroupEmpty(contact_group_);
 
 		if (robot_->getFrontUpset() > UPSET_THRESHOLD || robot_->getBackUpset() > UPSET_THRESHOLD) {
@@ -89,6 +100,7 @@ double Evaluator::evaluate(Robot* robot, ANN* ann) {
 		}
 	}
 	
-	double res = robot_->getXPosition();
-	return res < 0 ? 0 : res;
+	// double res = robot_->getXPosition();
+	// return res < 0 ? 0 : res;
+	return result < 0 ? 0 : result;
 }

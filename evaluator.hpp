@@ -40,6 +40,7 @@ private:
 	Robot* robot_;						// Robot to evaluate
 	ANN* ann_;							// Ann for that robot
 	double time_since_start_;			// Time counter
+	double prev_pos_;					// Previous position
 
 private:
 	static void nearCallback(void *data, dGeomID o1, dGeomID o2);

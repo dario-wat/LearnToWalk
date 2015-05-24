@@ -51,7 +51,7 @@ static const int GENERATIONS = 300;
 static const int POP_SIZE = 100;
 
 static const int in_l = LEG_NUM + LEG_NUM * (JT_NUM+1);
-static const int mid_l = 10;
+static const int mid_l = 12;
 static const int out_l = LEG_NUM*(JT_NUM+1);
 static const int c_size = (in_l+1)*mid_l + (mid_l+1)*out_l;
 
@@ -104,10 +104,18 @@ static void simulate() {
 		}
 		cerr << endl;
 		
+		int best_idx = -1;
+		double best_val = 0;
+		for (int i = 0; i < POP_SIZE; i++) {
+			if (fitness[i] > best_val) {
+				best_val = fitness[i];
+				best_idx = i;
+			}
+		}
+		cout << "Generation: " << j << " Score: " << fitness[best_idx] << endl;		
+		GA::printChromosome(population[best_idx], c_size);
+
 		ga->evolve(fitness, population);
-		
-		GA::printChromosome(population[0], c_size);
-		cout << j << endl;
 	}
 }
 
@@ -130,7 +138,7 @@ int main(int argc, char** argv) {
 		population[i] = new double[c_size];
 		GA::randomizeChromosome(population[i], c_size);
 	}
-	ga = new GA(c_size, POP_SIZE, 0.1, 15);
+	ga = new GA(c_size, POP_SIZE, 0.005, 3);
 	ann = new ANN(in_l, mid_l, out_l);
 	evaluator = new Evaluator(world, space, SIM_STEP, SIM_TIME);
 
