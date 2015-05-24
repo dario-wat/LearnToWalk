@@ -1,6 +1,5 @@
 // This is how I managed to compile this
-//  g++ quadruped.cpp robot.cpp ga.cpp ann.cpp evaluator.cpp visualizator.cpp 
-// -lode -lpthread -ldrawstuff -lX11 -lglut -lGL -lGLU -std=c++11 -DdDOUBLE
+// g++ quadruped.cpp robot.cpp ga.cpp ann.cpp evaluator.cpp visualizator.cpp -lode -lpthread -ldrawstuff -lX11 -lglut -lGL -lGLU -std=c++11 -DdDOUBLE
 
 #include <iostream>
 #include <cstdio>

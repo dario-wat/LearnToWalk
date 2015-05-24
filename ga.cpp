@@ -141,7 +141,7 @@ void GA::evolve(const std::vector<double>& fitness, std::vector<double*>& popula
 // all chromosomes.
 void GA::randomizeChromosome(double* chromosome, int size) {
 	for (int i = 0; i < size; i++) {
-		chromosome[i] = (rand() - RAND_MAX/2.) / (RAND_MAX/3.0);
+		chromosome[i] = (rand() - RAND_MAX/2.) / (RAND_MAX/8.0);
 	}
 }
 
